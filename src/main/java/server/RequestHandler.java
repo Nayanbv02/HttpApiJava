@@ -136,24 +136,20 @@ public class RequestHandler implements Runnable {
 
     private void handleCreateBook(OutputStream out, BufferedReader in) {
         try {
-            // Leer el cuerpo de la solicitud sin bloquear la ejecución
             StringBuilder body = new StringBuilder();
             String line;
             while (in.ready() && (line = in.readLine()) != null) {
                 body.append(line);
             }
 
-            // Depuración: Imprimir el cuerpo recibido
             String bodyString = body.toString().trim();
             System.out.println("Received JSON: " + bodyString);
 
-            // Verificar que el cuerpo no esté vacío
             if (bodyString.isEmpty()) {
                 ResponseUtils.sendResponse(out, 400, "Bad Request", "{\"error\":\"Empty JSON body\"}");
                 return;
             }
 
-            // Intentar parsear el JSON
             JSONObject json;
             try {
                 json = new JSONObject(bodyString);
@@ -162,7 +158,6 @@ public class RequestHandler implements Runnable {
                 return;
             }
 
-            // Validar que el JSON tenga los campos requeridos
             if (!json.has("title") || !json.has("author") || !json.has("year")) {
                 ResponseUtils.sendResponse(out, 400, "Bad Request", "{\"error\":\"Missing required fields\"}");
                 return;
@@ -172,7 +167,6 @@ public class RequestHandler implements Runnable {
             String author = json.getString("author");
             int year = json.getInt("year");
 
-            // Insertar el libro en la base de datos
             try (Connection conn = DatabaseManager.getConnection();
                     PreparedStatement stmt = conn.prepareStatement(
                             "INSERT INTO books (title, author, year) VALUES (?, ?, ?)",
@@ -183,13 +177,11 @@ public class RequestHandler implements Runnable {
                 stmt.setInt(3, year);
                 stmt.executeUpdate();
 
-                // Obtener el ID generado
                 ResultSet generatedKeys = stmt.getGeneratedKeys();
                 if (generatedKeys.next()) {
                     int newId = generatedKeys.getInt(1);
-                    json.put("id", newId); // Asignar el ID generado al JSON
-                    ResponseUtils.sendResponse(out, 201, "Created", json.toString()); // Enviar la respuesta con el
-                                                                                      // libro creado
+                    json.put("id", newId); 
+                    ResponseUtils.sendResponse(out, 201, "Created", json.toString()); 
                 } else {
                     ResponseUtils.sendResponse(out, 500, "Internal Server Error",
                             "{\"error\":\"Failed to retrieve generated ID\"}");
@@ -215,24 +207,20 @@ public class RequestHandler implements Runnable {
 
     private void handleUpdateBook(OutputStream out, BufferedReader in, int id) {
         try {
-            // Leer el cuerpo de la solicitud sin bloquear la ejecución
             StringBuilder body = new StringBuilder();
             String line;
             while (in.ready() && (line = in.readLine()) != null) {
                 body.append(line);
             }
 
-            // Depuración: Imprimir el cuerpo recibido
             String bodyString = body.toString().trim();
             System.out.println("Received JSON: " + bodyString);
 
-            // Verificar que el cuerpo no esté vacío
             if (bodyString.isEmpty()) {
                 ResponseUtils.sendResponse(out, 400, "Bad Request", "{\"error\":\"Empty JSON body\"}");
                 return;
             }
 
-            // Intentar parsear el JSON
             JSONObject json;
             try {
                 json = new JSONObject(bodyString);
@@ -241,7 +229,6 @@ public class RequestHandler implements Runnable {
                 return;
             }
 
-            // Validar que el JSON tenga los campos requeridos
             if (!json.has("title") || !json.has("author") || !json.has("year")) {
                 ResponseUtils.sendResponse(out, 400, "Bad Request", "{\"error\":\"Missing required fields\"}");
                 return;
@@ -251,7 +238,6 @@ public class RequestHandler implements Runnable {
             String author = json.getString("author");
             int year = json.getInt("year");
 
-            // Actualizar el libro en la base de datos
             try (Connection conn = DatabaseManager.getConnection();
                     PreparedStatement stmt = conn.prepareStatement(
                             "UPDATE books SET title = ?, author = ?, year = ? WHERE id = ?")) {
@@ -263,10 +249,9 @@ public class RequestHandler implements Runnable {
 
                 int rowsAffected = stmt.executeUpdate();
                 if (rowsAffected > 0) {
-                    json.put("id", id); // Asegúrate de incluir el ID en la respuesta
-                    ResponseUtils.sendResponse(out, 200, "OK", json.toString()); // Respuesta con el libro actualizado
+                    json.put("id", id); 
+                    ResponseUtils.sendResponse(out, 200, "OK", json.toString());
                 } else {
-                    // Si no se encuentra el libro con el ID
                     ResponseUtils.sendResponse(out, 404, "Not Found", "{\"error\":\"Book not found\"}");
                 }
             } catch (SQLException e) {
